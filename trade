@@ -2,9 +2,30 @@
 
 import sys
 
+def print_buy(currency: str, amount: float):
+    print("A stack is being bought", file=sys.stderr)
+    print(f'buy {currency} {amount}', flush=True)
+
+def print_sell(currency: str, amount: float):
+    print("A stack is being sold", file=sys.stderr)
+    print(f'sell {currency} {amount}', flush=True)
+
+class Stack:
+    def __init__(self, amount: float, stop_loss: float, take_profit: float):
+        self.amount = amount
+        self.stop_loss = stop_loss
+        self.take_profit = take_profit
+
+    def is_out_of_bounds(self, closing_price):
+        if closing_price <= self.stop_loss or closing_price >= self.take_profit:
+            return True
+        return False
+
 class Bot:
-    def __init__(self):
+    def __init__(self, currency: str):
         self.botState = BotState()
+        self.stacks = []
+        self.currency = currency
 
     def run(self):
         while True:
@@ -21,14 +42,53 @@ class Bot:
             if tmp[1] == "game":
                 self.botState.update_game(tmp[2], tmp[3])
         if tmp[0] == "action":
+            self.execute_action()
+
+    def execute_action(self):
+        current_closing_price = self.botState.charts[self.currency].closes[-1]
+        if not self.check_stacks_bounds(current_closing_price):
             dollars = self.botState.stacks["USDT"]
-            current_closing_price = self.botState.charts["USDT_BTC"].closes[-1]
             affordable = dollars / current_closing_price
-            print(f'My stacks are {dollars}. The current closing price is {current_closing_price}. So I can afford {affordable}', file=sys.stderr)
             if dollars < 100:
-                print("no_moves", flush=True)
+                self.do_nothing()
             else:
-                print(f'buy USDT_BTC {0.5 * affordable}', flush=True)
+                self.buy(affordable, current_closing_price * 0.90, current_closing_price * 1.10)
+
+    def buy(self, amount: float, stop_loss: float, take_profit: float):
+        self.stacks.append(Stack(amount, stop_loss, take_profit))
+        print_buy(self.currency, amount)
+
+    def sell(self, amount: float = None):
+        sum = 0
+        if amount is None:
+            amount = self.get_sum_of_stacks()
+        if amount > self.get_sum_of_stacks():
+            raise Exception("You are trying to sell more than you have")
+        if amount < 0:
+            raise Exception("You are trying to sell a negative amount")
+        if amount == 0:
+            raise Exception("You are trying to sell 0")
+        while sum < amount:
+            stack = self.stacks.pop(0)
+            sum += stack.amount * (1 - stack.transaction_fee)
+        print_sell(self.currency, amount)
+
+    def get_sum_of_stacks(self):
+        sum = 0
+        for stack in self.stacks:
+            sum += stack.amount
+        return sum
+
+    def check_stacks_bounds(self, closing_price : float):
+        for stack in self.stacks:
+            if stack.is_out_of_bounds(closing_price):
+                print_sell(self.currency, stack.amount * (1 - self.botState.transactionFee))
+                self.stacks.remove(stack)
+                return True
+        return False
+
+    def do_nothing(self):
+        print("no_moves", flush=True)
 
 class Candle:
     def __init__(self, format, intel):
@@ -53,6 +113,7 @@ class Candle:
     def __repr__(self):
         return str(self.pair) + str(self.date) + str(self.close) + str(self.volume)
 
+
 class Chart:
     def __init__(self):
         self.dates = []
@@ -70,6 +131,7 @@ class Chart:
         self.lows.append(candle.low)
         self.closes.append(candle.close)
         self.volumes.append(candle.volume)
+
 
 class BotState:
     def __init__(self):
@@ -129,7 +191,7 @@ class BotState:
 
 if __name__ == "__main__":
     try:
-        mybot = Bot()
+        mybot = Bot("USDT_BTC")
         mybot.run()
     except Exception as e:
         print(e, file=sys.stderr)

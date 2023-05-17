@@ -9,21 +9,17 @@ import sys
 
 def print_usage(prog_name: str):
     print("USAGE")
-    print("\t" + prog_name + " <num_candles> (<frequency> <filename>)")
+    print("\t" + prog_name + " <num_candles> <frequency> <filename>")
     print()
     print("DESCRIPTION")
-    print("\tnum_candles\tnumber of candles to generate")
+    print("\tnum_candles\tnumber of candles to generate | default: random between 338 and 2000")
     print("\tfrequency\tfrequency of the candles (ex: 1y, 1m, 1d, 1h, 1min) | default: 1h")
     print("\tfilename\tfile in which the candles will be stored (without extension) | default: sample.csv")
 
 def get_args(args: list):
-    num_candles = int(args[0])
-    if len(args) == 1:
-        frequency = "1h"
-        filename = "sample.csv"
-    else:
-        frequency = args[1]
-        filename = args[2] + ".csv"
+    num_candles = random.randint(338, 2000) if len(args) == 0 else int(args[0])
+    frequency = "1h" if len(args) <= 1 else args[1]
+    filename = "sample.csv" if len(args) <= 2 else args[2] + ".csv"
     return num_candles, frequency, filename
 
 def get_random_candles(pair: str, num_candles: int, frequency: str):
@@ -46,7 +42,7 @@ def export_to_csv(candles: pd.DataFrame, filename: str):
             writer.writerow(row)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4 and len(sys.argv) != 2:
+    if len(sys.argv) > 4:
         print_usage(sys.argv[0])
         sys.exit(84)
     if len(sys.argv) == 2 and (sys.argv[1] == "-h" or sys.argv[1] == "--help"):

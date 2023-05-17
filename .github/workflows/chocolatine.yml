@@ -41,11 +41,16 @@ jobs:
         if: env.FAIL_TASK == 'true'
         run: exit 1
 
-  check_program_compilation:
+  check_program_execution:
     name: Checks if the executable files are present and executable
     runs-on: ubuntu-latest
     needs: [check_repository_cleanliness]
     steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Verifies that files are present and executable
         run: |
@@ -71,7 +76,7 @@ jobs:
     name: Pushes the current repository files to a given mirror repository
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'push' }}
-    needs: [check_program_compilation]
+    needs: [check_program_execution]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3

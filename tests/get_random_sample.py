@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 
 import yfinance as yf
 import pandas as pd
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         sys.exit(0)
     try:
         num_candles, frequency, filename = get_args(sys.argv[1:])
-        candles = get_random_candles("USDT-BTC", num_candles, frequency)
+        candles = get_random_candles("BTC-USD", num_candles, frequency)
         export_to_csv(candles, filename)
     except Exception as e:
         print(e, file=sys.stderr)

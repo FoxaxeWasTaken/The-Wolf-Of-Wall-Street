@@ -70,7 +70,7 @@ class Bot:
             raise Exception("You are trying to sell 0")
         while sum < amount:
             stack = self.stacks.pop(0)
-            sum += stack.amount * (1 - stack.transaction_fee)
+            sum += stack.amount * (1 - self.botState.transactionFee)
         print_sell(self.currency, amount)
 
     def get_sum_of_stacks(self):
@@ -80,11 +80,14 @@ class Bot:
         return sum
 
     def check_stacks_bounds(self, closing_price : float):
+        sum = 0
         for stack in self.stacks:
             if stack.is_out_of_bounds(closing_price):
-                print_sell(self.currency, stack.amount * (1 - self.botState.transactionFee))
+                sum += stack.amount * (1 - self.botState.transactionFee)
                 self.stacks.remove(stack)
-                return True
+        if sum > 0:
+            print_sell(self.currency, sum)
+            return True
         return False
 
     def do_nothing(self):
@@ -113,7 +116,6 @@ class Candle:
     def __repr__(self):
         return str(self.pair) + str(self.date) + str(self.close) + str(self.volume)
 
-
 class Chart:
     def __init__(self):
         self.dates = []
@@ -131,7 +133,6 @@ class Chart:
         self.lows.append(candle.low)
         self.closes.append(candle.close)
         self.volumes.append(candle.volume)
-
 
 class BotState:
     def __init__(self):

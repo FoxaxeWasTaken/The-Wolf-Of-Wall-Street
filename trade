@@ -2,19 +2,22 @@
 
 import sys
 
-def print_buy(currency: str, amount: float):
+def print_buy(pair: str, amount: float):
     print("A stack is being bought", file=sys.stderr)
-    print(f'buy {currency} {amount}', flush=True)
+    print(f'buy {pair} {amount}', flush=True)
 
-def print_sell(currency: str, amount: float):
+def print_sell(pair: str, amount: float):
     print("A stack is being sold", file=sys.stderr)
-    print(f'sell {currency} {amount}', flush=True)
+    print(f'sell {pair} {amount}', flush=True)
 
 class Stack:
-    def __init__(self, amount: float, stop_loss: float, take_profit: float):
-        self.amount = amount
+    def __init__(self, amount: float, stop_loss: float, take_profit: float, pair: str, transactionFee: float):
+        self.amount = amount * (1 - transactionFee)
         self.stop_loss = stop_loss
         self.take_profit = take_profit
+        self.pair = pair
+        self.transactionFee = transactionFee
+        print_buy(pair, amount)
 
     def is_out_of_bounds(self, closing_price):
         if closing_price <= self.stop_loss or closing_price >= self.take_profit:
@@ -22,10 +25,10 @@ class Stack:
         return False
 
 class Bot:
-    def __init__(self, currency: str):
+    def __init__(self, pair: str):
         self.botState = BotState()
         self.stacks = []
-        self.currency = currency
+        self.pair = pair
 
     def run(self):
         while True:
@@ -45,7 +48,7 @@ class Bot:
             self.execute_action()
 
     def execute_action(self):
-        current_closing_price = self.botState.charts[self.currency].closes[-1]
+        current_closing_price = self.botState.charts[self.pair].closes[-1]
         if not self.check_stacks_bounds(current_closing_price):
             dollars = self.botState.stacks["USDT"]
             affordable = dollars / current_closing_price
@@ -55,8 +58,7 @@ class Bot:
                 self.buy(affordable, current_closing_price * 0.90, current_closing_price * 1.10)
 
     def buy(self, amount: float, stop_loss: float, take_profit: float):
-        self.stacks.append(Stack(amount, stop_loss, take_profit))
-        print_buy(self.currency, amount)
+        self.stacks.append(Stack(amount, stop_loss, take_profit, self.pair, self.botState.transactionFee))
 
     def sell(self, amount: float = None):
         sum = 0
@@ -70,8 +72,8 @@ class Bot:
             raise Exception("You are trying to sell 0")
         while sum < amount:
             stack = self.stacks.pop(0)
-            sum += stack.amount * (1 - self.botState.transactionFee)
-        print_sell(self.currency, amount)
+            sum += stack.amount
+        print_sell(self.pair, amount)
 
     def get_sum_of_stacks(self):
         sum = 0
@@ -83,10 +85,10 @@ class Bot:
         sum = 0
         for stack in self.stacks:
             if stack.is_out_of_bounds(closing_price):
-                sum += stack.amount * (1 - self.botState.transactionFee)
+                sum += stack.amount
                 self.stacks.remove(stack)
         if sum > 0:
-            print_sell(self.currency, sum)
+            print_sell(self.pair, sum)
             return True
         return False
 

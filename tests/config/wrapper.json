@@ -1,0 +1,24 @@
+{
+    "wrapper": {
+        "timebankMax": 1900,
+        "timePerMove": 90,
+        "maxTimeouts": 0,
+        "resultFile": "",
+        "propagateBotExitCode": false,
+        "debug": false
+    },
+    "match": {
+        "bots": [
+            {
+                "name": "tester",
+                "command": ""
+            }
+        ],
+        "engine": {
+            "command": "java -jar ./tests/bin/engine-1.1.0.jar",
+            "configuration": {
+                
+            }
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "candleInterval": {
+      "type": "integer",
+      "value": 3600
+    },
+    "dataFile": {
+      "type": "string",
+      "value": ""
+    },
+    "initialStack": {
+      "type": "integer",
+      "value": 1000
+    },
+    "transactionFeePercent": {
+      "type": "double",
+      "value": 0.2
+    },
+    "givenCandles": {
+      "type": "integer",
+      "value": 337
+    }
+}

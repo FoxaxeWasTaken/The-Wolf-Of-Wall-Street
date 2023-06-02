@@ -2,12 +2,12 @@ import sys
 
 
 def print_buy(pair: str, amount: float):
-    print("A stack is being bought", file=sys.stderr)
+    print("COMMAND BUY", amount, pair, file=sys.stderr)
     print(f"buy {pair} {amount}", flush=True)
 
 
 def print_sell(pair: str, amount: float):
-    print("A stack is being sold", file=sys.stderr)
+    print("COMMAND SELL", amount, pair, file=sys.stderr)
     print(f"sell {pair} {amount}", flush=True)
 
 
@@ -20,17 +20,21 @@ class Stack:
         pair: str,
         transactionFee: float,
     ):
-        self.amount = amount * (1 - transactionFee)
+        self.amount = amount * (1 - (transactionFee / 100))
         self.stop_loss = stop_loss
         self.take_profit = take_profit
         self.pair = pair
         self.transactionFee = transactionFee
+        print("CREATED STACK", self, file=sys.stderr, flush=True)
         print_buy(pair, amount)
 
     def is_out_of_bounds(self, closing_price):
         if closing_price <= self.stop_loss or closing_price >= self.take_profit:
             return True
         return False
+    
+    def __repr__(self):
+        return f"Stack({self.amount} {self.stop_loss} {self.take_profit} {self.pair})"
 
 
 class Candle:
@@ -74,3 +78,79 @@ class Chart:
         self.lows.append(candle.low)
         self.closes.append(candle.close)
         self.volumes.append(candle.volume)
+        self._update_emas()
+        self._update_smas()
+        self._update_stdevs()
+        self._update_bollingers()
+    
+    def _update_emas(self):
+        for window in [20, 50]:
+            if f"ema{window}" not in self.indicators:
+                self.indicators[f"ema{window}"] = []
+            if len(self.closes) >= window:
+                self.indicators[f"ema{window}"].append(self._ema(window))
+            else:
+                self.indicators[f"ema{window}"].append(None)
+    
+    def _update_smas(self):
+        for window in [5, 8, 13, 21]:
+            if f"sma{window}" not in self.indicators:
+                self.indicators[f"sma{window}"] = []
+            if len(self.closes) >= window:
+                self.indicators[f"sma{window}"].append(self._sma(window))
+            else:
+                self.indicators[f"sma{window}"].append(None)
+
+    def _update_stdevs(self):
+        for window in [20]:
+            if f"stdev{window}" not in self.indicators:
+                self.indicators[f"stdev{window}"] = []
+            if len(self.closes) >= window:
+                self.indicators[f"stdev{window}"].append(self._stdev(window))
+            else:
+                self.indicators[f"stdev{window}"].append(None)
+
+    def _update_bollingers(self):
+        for sma_window in [20]:
+            for stdevs_count in [1, 1.5, 2]:
+                if f"bollinger{stdevs_count}_{sma_window}_upper" not in self.indicators:
+                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_upper"] = []
+                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_middle"] = []
+                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_lower"] = []
+                if len(self.closes) >= sma_window:
+                    upper, middle, lower = self._bollinger(sma_window, stdevs_count)
+                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_upper"].append(upper)
+                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_middle"].append(middle)
+                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_lower"].append(lower)
+                else:
+                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_upper"].append(None)
+                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_middle"].append(None)
+                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_lower"].append(None)
+    
+    def _ema(self, window):
+        if len(self.closes) < window:
+            return None
+        if len(self.closes) == window:
+            return self._sma(window)
+        multiplier = 2 / (window + 1)
+        previous_ema = self.indicators[f"ema{window}"][-1]
+        return (self.closes[-1] - previous_ema) * multiplier + previous_ema
+
+    def _sma(self, window):
+        if len(self.closes) < window:
+            return None
+        return sum(self.closes[-window:]) / window
+    
+    def _stdev(self, window):
+        if len(self.closes) < window:
+            return None
+        sma = self._sma(window)
+        variance = sum([(close - sma) ** 2 for close in self.closes[-window:]]) / window
+        return variance ** 0.5
+
+    def _bollinger(self, sma_window, stdevs_count):
+        if len(self.closes) < sma_window:
+            return None
+        sma = self._sma(sma_window)
+        stdev = self._stdev(sma_window)
+        return sma + stdevs_count * stdev, sma, sma - stdevs_count * stdev

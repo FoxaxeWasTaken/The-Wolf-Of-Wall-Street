@@ -40,28 +40,28 @@ class Bot:
             dollars = self.botState.stacks["USDT"]
             affordable = dollars / close
             if dollars > 1:
-                upper = self.botState.charts[self.pair].indicators["bollinger2_20_upper"][-1]
-                lower = self.botState.charts[self.pair].indicators["bollinger2_20_lower"][-1]
-                buy_signal = lower > min(low, close)
-                sell_signal = upper < max(high, close)
+                rsi = self.botState.charts[self.pair].indicators["rsi14"][-1]
+                rsi_buy_signal = rsi < 30
                 ema20 = self.botState.charts[self.pair].indicators["ema20"][-1]
                 ema50 = self.botState.charts[self.pair].indicators["ema50"][-1]
-                tendency = ema20 > ema50
-                if self.pause == 0 and buy_signal and tendency:
-                    stop_loss = close * 0.95
-                    take_profit = close * 1.10
-                    self.buy(affordable, close, stop_loss, take_profit, trailing_stop=0.01)
-                    self.pause = 2
-                elif sell_signal and self.get_sum_of_stacks() > 0:
-                    self.sell()
-                    self.pause = 2
+                ema100 = self.botState.charts[self.pair].indicators["ema100"][-1]
+                tendency = ema50 > ema20 and ema20 > ema100
+                print("rsi", rsi, file=sys.stderr, flush=True)
+                if self.pause == 0:
+                    if tendency and rsi_buy_signal:
+                        stop_loss = close * 0.991
+                        take_profit = close * 1.20
+                        self.buy(affordable, close, stop_loss, take_profit, trailing_stop=0.01)
+                        self.pause = 15
+                    else:
+                        self.do_nothing()
                 else:
                     self.do_nothing()
                 
             else:
                 self.do_nothing()
         else:
-            self.pause = 2
+            self.pause = 3
 
     def buy(self, amount: float, closing_price : float, stop_loss: float, take_profit: float, trailing_stop: float = None):
         self.stacks.append(
@@ -97,9 +97,9 @@ class Bot:
             if stack.is_out_of_bounds(closing_price):
                 sum += stack.amount
                 self.stacks.remove(stack)
+                print("Stack hitted", "SL" if stack.stop_loss > closing_price else "TP", file=sys.stderr, flush=True)
         if sum > 0:
             print_sell(self.pair, sum)
-            print(sum, "sold because of TP or SL", file=sys.stderr, flush=True)
             return True
         return False
 

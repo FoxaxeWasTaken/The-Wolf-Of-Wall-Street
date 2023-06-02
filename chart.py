@@ -38,7 +38,7 @@ class Stack:
                 return
             delta = (current_closing_price - self.closing_price) / self.closing_price
             if delta >= self.trailing_stop_loss:
-                self.stop_loss = current_closing_price
+                self.stop_loss += self.stop_loss * self.trailing_stop_loss
                 self.closing_price = current_closing_price
                 print("UPDATED STACK STOP LOSS", self, file=sys.stderr, flush=True)
                 return
@@ -97,9 +97,10 @@ class Chart:
         self._update_smas()
         self._update_stdevs()
         self._update_bollingers()
+        self._update_rsis()
     
     def _update_emas(self):
-        for window in [20, 50]:
+        for window in [20, 50, 100, 200]:
             if f"ema{window}" not in self.indicators:
                 self.indicators[f"ema{window}"] = []
             if len(self.closes) >= window:
@@ -141,7 +142,16 @@ class Chart:
                     self.indicators[f"bollinger{stdevs_count}_{sma_window}_upper"].append(None)
                     self.indicators[f"bollinger{stdevs_count}_{sma_window}_middle"].append(None)
                     self.indicators[f"bollinger{stdevs_count}_{sma_window}_lower"].append(None)
-    
+
+    def _update_rsis(self):
+        for window in [9, 14, 21]:
+            if f"rsi{window}" not in self.indicators:
+                self.indicators[f"rsi{window}"] = []
+            if len(self.closes) >= window:
+                self.indicators[f"rsi{window}"].append(self._rsi(window))
+            else:
+                self.indicators[f"rsi{window}"].append(None)
+
     def _ema(self, window):
         if len(self.closes) < window:
             return None
@@ -169,3 +179,30 @@ class Chart:
         sma = self._sma(sma_window)
         stdev = self._stdev(sma_window)
         return sma + stdevs_count * stdev, sma, sma - stdevs_count * stdev
+    
+    def _rsi(self, window):
+        if len(self.closes) < window:
+            return None
+
+        gains = []
+        losses = []
+        
+        for i in range(1, window):
+            change = self.closes[-i] - self.closes[-i - 1]
+            if change > 0:
+                gains.append(change)
+                losses.append(0)
+            else:
+                gains.append(0)
+                losses.append(abs(change))
+
+        average_gain = sum(gains) / window
+        average_loss = sum(losses) / window
+        
+        if average_loss == 0:
+            return 100
+        
+        relative_strength = average_gain / average_loss
+        rsi = 100 - (100 / (1 + relative_strength))
+        
+        return rsi

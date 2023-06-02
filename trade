@@ -2,27 +2,8 @@
 
 import sys
 
-def print_buy(pair: str, amount: float):
-    print("A stack is being bought", file=sys.stderr)
-    print(f'buy {pair} {amount}', flush=True)
+from chart import Stack, Chart, Candle, print_buy, print_sell
 
-def print_sell(pair: str, amount: float):
-    print("A stack is being sold", file=sys.stderr)
-    print(f'sell {pair} {amount}', flush=True)
-
-class Stack:
-    def __init__(self, amount: float, stop_loss: float, take_profit: float, pair: str, transactionFee: float):
-        self.amount = amount * (1 - transactionFee)
-        self.stop_loss = stop_loss
-        self.take_profit = take_profit
-        self.pair = pair
-        self.transactionFee = transactionFee
-        print_buy(pair, amount)
-
-    def is_out_of_bounds(self, closing_price):
-        if closing_price <= self.stop_loss or closing_price >= self.take_profit:
-            return True
-        return False
 
 class Bot:
     def __init__(self, pair: str):
@@ -55,10 +36,18 @@ class Bot:
             if dollars < 100:
                 self.do_nothing()
             else:
-                self.buy(affordable, current_closing_price * 0.90, current_closing_price * 1.10)
+                self.buy(
+                    affordable,
+                    current_closing_price * 0.90,
+                    current_closing_price * 1.10,
+                )
 
     def buy(self, amount: float, stop_loss: float, take_profit: float):
-        self.stacks.append(Stack(amount, stop_loss, take_profit, self.pair, self.botState.transactionFee))
+        self.stacks.append(
+            Stack(
+                amount, stop_loss, take_profit, self.pair, self.botState.transactionFee
+            )
+        )
 
     def sell(self, amount: float = None):
         sum = 0
@@ -81,7 +70,7 @@ class Bot:
             sum += stack.amount
         return sum
 
-    def check_stacks_bounds(self, closing_price : float):
+    def check_stacks_bounds(self, closing_price: float):
         sum = 0
         for stack in self.stacks:
             if stack.is_out_of_bounds(closing_price):
@@ -95,46 +84,6 @@ class Bot:
     def do_nothing(self):
         print("no_moves", flush=True)
 
-class Candle:
-    def __init__(self, format, intel):
-        tmp = intel.split(",")
-        for (i, key) in enumerate(format):
-            value = tmp[i]
-            if key == "pair":
-                self.pair = value
-            if key == "date":
-                self.date = int(value)
-            if key == "high":
-                self.high = float(value)
-            if key == "low":
-                self.low = float(value)
-            if key == "open":
-                self.open = float(value)
-            if key == "close":
-                self.close = float(value)
-            if key == "volume":
-                self.volume = float(value)
-
-    def __repr__(self):
-        return str(self.pair) + str(self.date) + str(self.close) + str(self.volume)
-
-class Chart:
-    def __init__(self):
-        self.dates = []
-        self.opens = []
-        self.highs = []
-        self.lows = []
-        self.closes = []
-        self.volumes = []
-        self.indicators = {}
-
-    def add_candle(self, candle: Candle):
-        self.dates.append(candle.date)
-        self.opens.append(candle.open)
-        self.highs.append(candle.high)
-        self.lows.append(candle.low)
-        self.closes.append(candle.close)
-        self.volumes.append(candle.volume)
 
 class BotState:
     def __init__(self):
@@ -191,6 +140,7 @@ class BotState:
             for stack_str in new_stacks:
                 stack_infos = stack_str.strip().split(":")
                 self.update_stack(stack_infos[0], float(stack_infos[1]))
+
 
 if __name__ == "__main__":
     try:

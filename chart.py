@@ -15,18 +15,33 @@ class Stack:
     def __init__(
         self,
         amount: float,
+        closing_price: float,
         stop_loss: float,
         take_profit: float,
         pair: str,
         transactionFee: float,
+        trailing_stop_loss: float = None,
     ):
         self.amount = amount * (1 - (transactionFee / 100))
+        self.closing_price = closing_price
         self.stop_loss = stop_loss
         self.take_profit = take_profit
         self.pair = pair
         self.transactionFee = transactionFee
+        self.trailing_stop_loss = trailing_stop_loss
         print("CREATED STACK", self, file=sys.stderr, flush=True)
         print_buy(pair, amount)
+
+    def update(self, current_closing_price):
+        if self.trailing_stop_loss is not None:
+            if current_closing_price == self.closing_price or current_closing_price < self.closing_price:
+                return
+            delta = (current_closing_price - self.closing_price) / self.closing_price
+            if delta >= self.trailing_stop_loss:
+                self.stop_loss = current_closing_price
+                self.closing_price = current_closing_price
+                print("UPDATED STACK STOP LOSS", self, file=sys.stderr, flush=True)
+                return
 
     def is_out_of_bounds(self, closing_price):
         if closing_price <= self.stop_loss or closing_price >= self.take_profit:

@@ -7,20 +7,20 @@ Project made by :
 
 for our 2nd year of engineering school at Epitech.
 
-# Description
+## Description
 
 The goal of this project is to create a trading algorithm to trade crypto-currencies on a simulated market. (see [AI Bot Workspace](https://github.com/jmerle/ai-bot-workspace))
 
-# How to use
+## How to use
 
-## Install dependencies
+### Install dependencies
 
 ```bash
 git clone git@github.com:FoxaxeWasTaken/The-Wolf-Of-Wall-Street.git
 pip install -r requirements.txt
 ```
 
-## Run the project
+### Run the project
 
 `Use AI Bot Workspace to run the project
 <br>
@@ -31,6 +31,6 @@ Test the script results with the given testing utility
 tests/get_algo_results.py
 ```
 
-# Our algorithm
+## Our algorithm
 
-## To be filled later
+### To be filled later

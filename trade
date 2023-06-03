@@ -37,8 +37,6 @@ class Bot:
 
     def execute_action(self):
         close = self.botState.charts[self.pair].closes[-1]
-        high = self.botState.charts[self.pair].highs[-1]
-        low = self.botState.charts[self.pair].lows[-1]
         self.pause = self.pause - 1 if self.pause > 0 else 0
         if not self.check_stacks_bounds(close):
             dollars = self.botState.stacks["USDT"]
@@ -55,7 +53,7 @@ class Bot:
                             close,
                             close * float(buy_on["stop_loss"]),
                             close * float(buy_on["take_profit"]),
-                            float(buy_on["trailing_stop_loss"]),
+                            float(buy_on["trailing_stop_loss"]) if buy_on["trailing_stop_loss"] is not None else None,
                         )
                         self.pause = buy_on["pause"]
                         return

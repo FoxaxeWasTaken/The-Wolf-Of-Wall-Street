@@ -26,7 +26,7 @@ def get_algo_results(algo_file: str, candles_file: str, result_file: str):
 
     cmd = ["java", "-jar", WRAPPER_PATH, json.dumps(wrapper_config)]
 
-    subprocess.run(cmd, timeout=20)
+    subprocess.run(cmd, timeout=40)
 
 
 def get_results(result_file: str) -> dict:

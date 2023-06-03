@@ -41,14 +41,20 @@ class Config:
     def check_on_chart(self, signal: str, chart: Chart) -> bool:
         for values in self.__config["signals"][signal]:
             right, cond, left = values
-            try:
-                right = chart.indicators[right][-1]
-            except KeyError:
-                right = float(right)
-            try:
-                left = chart.indicators[left][-1]
-            except KeyError:
-                left = float(left)
+            if right in ["close", "high", "low", "volume"]:
+                right = getattr(chart, right + "s")[-1]
+            else:
+                try:
+                    right = chart.indicators[right][-1]
+                except KeyError:
+                    right = float(right)
+            if left in ["close", "high", "low", "volume"]:
+                left = getattr(chart, left + "s")[-1]
+            else:
+                try:
+                    left = chart.indicators[left][-1]
+                except KeyError:
+                    left = float(left)
 
             if cond == ">":
                 if right < left:

@@ -34,7 +34,10 @@ class Stack:
 
     def update(self, current_closing_price):
         if self.trailing_stop_loss is not None:
-            if current_closing_price == self.closing_price or current_closing_price < self.closing_price:
+            if (
+                current_closing_price == self.closing_price
+                or current_closing_price < self.closing_price
+            ):
                 return
             delta = (current_closing_price - self.closing_price) / self.closing_price
             if delta >= self.trailing_stop_loss:
@@ -47,9 +50,22 @@ class Stack:
         if closing_price <= self.stop_loss or closing_price >= self.take_profit:
             return True
         return False
-    
+
     def __repr__(self):
         return f"Stack({self.amount} {self.stop_loss} {self.take_profit} {self.pair})"
+
+    def __eq__(self, __value: object) -> bool:
+        if isinstance(__value, Stack):
+            return (
+                self.amount == __value.amount
+                and self.stop_loss == __value.stop_loss
+                and self.take_profit == __value.take_profit
+                and self.pair == __value.pair
+            )
+        return False
+
+    def __hash__(self) -> int:
+        return hash((self.amount, self.stop_loss, self.take_profit, self.pair))
 
 
 class Candle:
@@ -98,7 +114,7 @@ class Chart:
         self._update_stdevs()
         self._update_bollingers()
         self._update_rsis()
-    
+
     def _update_emas(self):
         for window in [20, 50, 100, 200]:
             if f"ema{window}" not in self.indicators:
@@ -107,7 +123,7 @@ class Chart:
                 self.indicators[f"ema{window}"].append(self._ema(window))
             else:
                 self.indicators[f"ema{window}"].append(None)
-    
+
     def _update_smas(self):
         for window in [5, 8, 13, 21]:
             if f"sma{window}" not in self.indicators:
@@ -135,13 +151,25 @@ class Chart:
                     self.indicators[f"bollinger{stdevs_count}_{sma_window}_lower"] = []
                 if len(self.closes) >= sma_window:
                     upper, middle, lower = self._bollinger(sma_window, stdevs_count)
-                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_upper"].append(upper)
-                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_middle"].append(middle)
-                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_lower"].append(lower)
+                    self.indicators[
+                        f"bollinger{stdevs_count}_{sma_window}_upper"
+                    ].append(upper)
+                    self.indicators[
+                        f"bollinger{stdevs_count}_{sma_window}_middle"
+                    ].append(middle)
+                    self.indicators[
+                        f"bollinger{stdevs_count}_{sma_window}_lower"
+                    ].append(lower)
                 else:
-                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_upper"].append(None)
-                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_middle"].append(None)
-                    self.indicators[f"bollinger{stdevs_count}_{sma_window}_lower"].append(None)
+                    self.indicators[
+                        f"bollinger{stdevs_count}_{sma_window}_upper"
+                    ].append(None)
+                    self.indicators[
+                        f"bollinger{stdevs_count}_{sma_window}_middle"
+                    ].append(None)
+                    self.indicators[
+                        f"bollinger{stdevs_count}_{sma_window}_lower"
+                    ].append(None)
 
     def _update_rsis(self):
         for window in [9, 14, 21]:
@@ -165,13 +193,13 @@ class Chart:
         if len(self.closes) < window:
             return None
         return sum(self.closes[-window:]) / window
-    
+
     def _stdev(self, window):
         if len(self.closes) < window:
             return None
         sma = self._sma(window)
         variance = sum([(close - sma) ** 2 for close in self.closes[-window:]]) / window
-        return variance ** 0.5
+        return variance**0.5
 
     def _bollinger(self, sma_window, stdevs_count):
         if len(self.closes) < sma_window:
@@ -179,14 +207,14 @@ class Chart:
         sma = self._sma(sma_window)
         stdev = self._stdev(sma_window)
         return sma + stdevs_count * stdev, sma, sma - stdevs_count * stdev
-    
+
     def _rsi(self, window):
         if len(self.closes) < window:
             return None
 
         gains = []
         losses = []
-        
+
         for i in range(1, window):
             change = self.closes[-i] - self.closes[-i - 1]
             if change > 0:
@@ -198,11 +226,11 @@ class Chart:
 
         average_gain = sum(gains) / window
         average_loss = sum(losses) / window
-        
+
         if average_loss == 0:
             return 100
-        
+
         relative_strength = average_gain / average_loss
         rsi = 100 - (100 / (1 + relative_strength))
-        
+
         return rsi

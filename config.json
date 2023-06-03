@@ -1,0 +1,18 @@
+{
+    "pauseOnBoundsSell": 3,
+    "signals": {
+        "rsiBuy": [["rsi14", "<", "30"]],
+        "rsiSell": [["rsi14", ">", "70"]],
+        "tendency": [["ema50", ">", "ema20"], ["ema20", ">", "ema100"]]
+    },
+    "buyOn": [
+        {
+            "conditions": ["rsiBuy", "tendency"],
+            "risk": 100,
+            "stop_loss": 0.991,
+            "take_profit": 1.20,
+            "trailing_stop_loss": 0.01,
+            "pause": 15
+        }
+    ]
+}

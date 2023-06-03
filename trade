@@ -1,13 +1,17 @@
 #!/usr/bin/python3
 
 import sys
+import os
 
 from chart import Stack, Chart, Candle, print_buy, print_sell
 
+from config import Config
+
 
 class Bot:
-    def __init__(self, pair: str):
+    def __init__(self, pair: str, config: Config):
         self.botState = BotState()
+        self.config = config
         self.stacks = []
         self.pair = pair
         self.pause = 0
@@ -35,38 +39,51 @@ class Bot:
         close = self.botState.charts[self.pair].closes[-1]
         high = self.botState.charts[self.pair].highs[-1]
         low = self.botState.charts[self.pair].lows[-1]
-        self.pause = self.pause - 1 if self.pause > 0 else 0 
+        self.pause = self.pause - 1 if self.pause > 0 else 0
         if not self.check_stacks_bounds(close):
             dollars = self.botState.stacks["USDT"]
             affordable = dollars / close
-            if dollars > 1:
-                rsi = self.botState.charts[self.pair].indicators["rsi14"][-1]
-                rsi_buy_signal = rsi < 30
-                ema20 = self.botState.charts[self.pair].indicators["ema20"][-1]
-                ema50 = self.botState.charts[self.pair].indicators["ema50"][-1]
-                ema100 = self.botState.charts[self.pair].indicators["ema100"][-1]
-                tendency = ema50 > ema20 and ema20 > ema100
-                print("rsi", rsi, file=sys.stderr, flush=True)
-                if self.pause == 0:
-                    if tendency and rsi_buy_signal:
-                        stop_loss = close * 0.991
-                        take_profit = close * 1.20
-                        self.buy(affordable, close, stop_loss, take_profit, trailing_stop=0.01)
-                        self.pause = 15
-                    else:
-                        self.do_nothing()
-                else:
-                    self.do_nothing()
-                
+            if dollars > 1 and self.pause == 0:
+                for buy_on in self.config.get_buy_on():
+                    conditions = buy_on["conditions"]
+                    if self.config.check_conditions(
+                        conditions, self.botState.charts[self.pair]
+                    ):
+                        amount = affordable * (buy_on["risk"] / 100)
+                        self.buy(
+                            amount,
+                            close,
+                            close * float(buy_on["stop_loss"]),
+                            close * float(buy_on["take_profit"]),
+                            float(buy_on["trailing_stop_loss"]),
+                        )
+                        self.pause = buy_on["pause"]
+                        return
+
+                self.do_nothing()
+
             else:
                 self.do_nothing()
         else:
             self.pause = 3
 
-    def buy(self, amount: float, closing_price : float, stop_loss: float, take_profit: float, trailing_stop: float = None):
+    def buy(
+        self,
+        amount: float,
+        closing_price: float,
+        stop_loss: float,
+        take_profit: float,
+        trailing_stop: float = None,
+    ):
         self.stacks.append(
             Stack(
-                amount, closing_price, stop_loss, take_profit, self.pair, self.botState.transactionFee, trailing_stop
+                amount,
+                closing_price,
+                stop_loss,
+                take_profit,
+                self.pair,
+                self.botState.transactionFee,
+                trailing_stop,
             )
         )
 
@@ -97,7 +114,12 @@ class Bot:
             if stack.is_out_of_bounds(closing_price):
                 sum += stack.amount
                 self.stacks.remove(stack)
-                print("Stack hitted", "SL" if stack.stop_loss > closing_price else "TP", file=sys.stderr, flush=True)
+                print(
+                    "Stack hitted",
+                    "SL" if stack.stop_loss > closing_price else "TP",
+                    file=sys.stderr,
+                    flush=True,
+                )
         if sum > 0:
             print_sell(self.pair, sum)
             return True
@@ -166,8 +188,12 @@ class BotState:
 
 if __name__ == "__main__":
     try:
-        mybot = Bot("USDT_BTC")
+        current_file_path = os.path.dirname(os.path.realpath(__file__))
+        path = len(sys.argv) > 1 and sys.argv[1] or f"{current_file_path}/config.json"
+        config = Config(path)
+        mybot = Bot("USDT_BTC", config)
         mybot.run()
     except Exception as e:
+        raise  # TODO: REMOVE THIS LINE
         print(e, file=sys.stderr)
         sys.exit(84)

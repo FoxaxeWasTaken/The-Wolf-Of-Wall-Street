@@ -192,6 +192,5 @@ if __name__ == "__main__":
         mybot = Bot("USDT_BTC", config)
         mybot.run()
     except Exception as e:
-        raise  # TODO: REMOVE THIS LINE
         print(e, file=sys.stderr)
         sys.exit(84)

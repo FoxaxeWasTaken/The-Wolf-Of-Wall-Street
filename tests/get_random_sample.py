@@ -24,11 +24,11 @@ def get_args(args: list):
 
 def get_random_candles(pair: str, num_candles: int, frequency: str):
     currency_pair = yf.Ticker(pair)
-    history = currency_pair.history(period="max")
-    resampled_data = history.resample(frequency).ffill()
-    total_candles = len(resampled_data)
+    history = currency_pair.history(period="6mo", interval=frequency)
+    history = history.dropna().resample(frequency).ffill()
+    total_candles = len(history)
     start_index = random.randint(0, total_candles - num_candles)
-    candles = resampled_data.iloc[start_index : start_index + num_candles]
+    candles = history.iloc[start_index : start_index + num_candles]
     return candles
 
 def export_to_csv(candles: pd.DataFrame, filename: str):

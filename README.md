@@ -33,4 +33,10 @@ tests/get_algo_results.py
 
 ## Our algorithm
 
-### To be filled later
+See [Algorithm](/algorithm.md)
+
+### Why we failed
+
+We simply didn't work enough on the project to get the best results possible, so we focused on making a simple strategy but to do it well.
+We implemented many of the required features to build a good strategy (multiple indicators, TP/SL, trailing stops), but we didn't have enough time to
+test it and to improve it.
